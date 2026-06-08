@@ -116,6 +116,21 @@ LATEX_COMMANDS: Dict[str, str] = {
     r'\Re': 'ℜ', r'\Im': 'ℑ', r'\aleph': 'ℵ', r'\beth': 'ℶ'
 }
 
+MATHBB_MAP: Dict[str, str] = {
+    # Прописные буквы (наиболее часто используемые для множеств)
+    'A': '𝔸', 'B': '𝔹', 'C': 'ℂ', 'D': '𝔻', 'E': '𝔼',
+    'F': '𝔽', 'G': '𝔾', 'H': 'ℍ', 'I': '𝕀', 'J': '𝕁',
+    'K': '𝕂', 'L': '𝕃', 'M': '𝕄', 'N': 'ℕ', 'O': '𝕆',
+    'P': 'ℙ', 'Q': 'ℚ', 'R': 'ℝ', 'S': '𝕊', 'T': '𝕋',
+    'U': '𝕌', 'V': '𝕍', 'W': '𝕎', 'X': '𝕏', 'Y': '𝕐', 'Z': 'ℤ',
+    # Строчные буквы
+    'a': '𝕒', 'b': '𝕓', 'c': '𝕔', 'd': '𝕕', 'e': '𝕖',
+    'f': '𝕗', 'g': '𝕘', 'h': '𝕙', 'i': '𝕚', 'j': '𝕛',
+    'k': '𝕜', 'l': '𝕝', 'm': '𝕞', 'n': '𝕟', 'o': '𝕠',
+    'p': '𝕡', 'q': '𝕢', 'r': '𝕣', 's': '𝕤', 't': '𝕥',
+    'u': '𝕦', 'v': '𝕧', 'w': '𝕨', 'x': '𝕩', 'y': '𝕪', 'z': '𝕫'
+}
+
 
 def _replace_superscript(match: re.Match) -> str:
     """Конвертирует содержимое ^{...} в верхний индекс."""
@@ -128,6 +143,10 @@ def _replace_subscript(match: re.Match) -> str:
     content = match.group(1)
     return "".join(SUBSCRIPT_MAP.get(char, char) for char in content)
 
+def _replace_mathbb(match: re.Match) -> str:
+    """Конвертирует содержимое \mathbb{...} в шрифт Blackboard Bold."""
+    content = match.group(1)
+    return "".join(MATHBB_MAP.get(char, char) for char in content)
 
 def latex_to_unicode(text: str) -> str:
     """
@@ -139,14 +158,15 @@ def latex_to_unicode(text: str) -> str:
     # 1. Обрабатываем групповые индексы: ^{abc} и _{abc}
     text = re.sub(r'\^\{([^}]+)\}', _replace_superscript, text)
     text = re.sub(r'\_\{([^}]+)\}', _replace_subscript, text)
-
+    text = re.sub(r'\\mathbb\{([^}]+)\}', _replace_mathbb, text)
     # 2. Обрабатываем одиночные индексы: ^a и _a
     # (.) захватывает любой одиночный символ. Если он есть в словаре, он заменится.
     text = re.sub(r'\^(?!\{)(.)', 
                   lambda m: SUPERSCRIPT_MAP.get(m.group(1), m.group(0)), text)
     text = re.sub(r'\_(?!\{)(.)', 
                   lambda m: SUBSCRIPT_MAP.get(m.group(1), m.group(0)), text)
-
+    text = re.sub(r'\\mathbb(?!\{)([a-zA-Z])', 
+                  lambda m: MATHBB_MAP.get(m.group(1), m.group(0)), text)
     # 3. Заменяем именованные команды 
     for latex_cmd, unicode_char in LATEX_COMMANDS.items():
         text = text.replace(latex_cmd, unicode_char)
